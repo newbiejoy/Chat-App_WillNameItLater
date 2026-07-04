@@ -1,0 +1,52 @@
+/* Import Tailwind CSS v4 */
+@import "tailwindcss";
+
+/*
+  Custom theme for our chat app.
+  In Tailwind v4, we define custom design tokens using @theme.
+  These become usable as Tailwind utility classes automatically.
+  For example, --color-dark-900 can be used as bg-dark-900.
+*/
+@theme {
+  /* Font family */
+  --font-sans: "Inter", sans-serif;
+
+  /* Dark color palette inspired by Telegram */
+  --color-dark-950: #0e1621;   /* Darkest - main background */
+  --color-dark-900: #17212b;   /* Sidebar background */
+  --color-dark-800: #1e2c3a;   /* Input fields, hover states */
+  --color-dark-700: #2b3e50;   /* Borders, dividers */
+  --color-dark-600: #3e5368;   /* Subtle text, icons */
+
+  /* Accent colors */
+  --color-accent-500: #2b5278; /* Primary accent (Telegram blue) */
+  --color-accent-400: #3a7bd5; /* Brighter accent for hover */
+  --color-accent-300: #6ab3f7; /* Links, highlights */
+
+  /* Message bubble colors */
+  --color-bubble-own: #2b5278;    /* Your messages */
+  --color-bubble-other: #182533;  /* Other person's messages */
+
+  /* Text colors */
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #8b9eb0;
+  --color-text-muted: #5b7083;
+
+  /* Status colors */
+  --color-online: #4dd964;
+}
+
+/*
+  Global base styles.
+  We apply a dark background and light text to the whole page.
+*/
+body {
+  margin: 0;
+  background-color: var(--color-dark-950);
+  color: var(--color-text-primary);
+}
+
+/* Ensure the app fills the full viewport height */
+#root {
+  height: 100vh;
+}
