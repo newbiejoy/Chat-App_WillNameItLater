@@ -3,29 +3,31 @@
 
 /*
   Custom theme for our chat app.
-  In Tailwind v4, we define custom design tokens using @theme.
-  These become usable as Tailwind utility classes automatically.
-  For example, --color-dark-900 can be used as bg-dark-900.
+  We use CSS custom properties so we can switch between
+  AMOLED dark and Light themes at runtime.
 */
 @theme {
   /* Font family */
   --font-sans: "Inter", sans-serif;
 
-  /* Dark color palette inspired by Telegram */
-  --color-dark-950: #0e1621;   /* Darkest - main background */
-  --color-dark-900: #17212b;   /* Sidebar background */
-  --color-dark-800: #1e2c3a;   /* Input fields, hover states */
-  --color-dark-700: #2b3e50;   /* Borders, dividers */
+  /*
+    These are the DEFAULT (AMOLED dark) theme colors.
+    Pure blacks for true AMOLED screens.
+  */
+  --color-dark-950: #000000;   /* Pure black background */
+  --color-dark-900: #0a0a0a;   /* Sidebar background */
+  --color-dark-800: #141414;   /* Input fields, hover states */
+  --color-dark-700: #1f1f1f;   /* Borders, dividers */
   --color-dark-600: #3e5368;   /* Subtle text, icons */
 
   /* Accent colors */
-  --color-accent-500: #2b5278; /* Primary accent (Telegram blue) */
-  --color-accent-400: #3a7bd5; /* Brighter accent for hover */
-  --color-accent-300: #6ab3f7; /* Links, highlights */
+  --color-accent-500: #2b5278;
+  --color-accent-400: #3a7bd5;
+  --color-accent-300: #6ab3f7;
 
   /* Message bubble colors */
-  --color-bubble-own: #2b5278;    /* Your messages */
-  --color-bubble-other: #182533;  /* Other person's messages */
+  --color-bubble-own: #2b5278;
+  --color-bubble-other: #111111;
 
   /* Text colors */
   --color-text-primary: #f5f5f5;
@@ -37,16 +39,38 @@
 }
 
 /*
-  Global base styles.
-  We apply a dark background and light text to the whole page.
+  Light theme overrides.
+  When the <html> tag has data-theme="light", these CSS variables
+  override the dark defaults above.
 */
+[data-theme="light"] {
+  --color-dark-950: #f0f2f5;   /* Light gray background */
+  --color-dark-900: #ffffff;   /* White sidebar */
+  --color-dark-800: #e8eaed;   /* Input fields */
+  --color-dark-700: #d1d5db;   /* Borders */
+  --color-dark-600: #9ca3af;
+
+  --color-accent-500: #3b82f6;
+  --color-accent-400: #2563eb;
+  --color-accent-300: #1d4ed8;
+
+  --color-bubble-own: #3b82f6;
+  --color-bubble-other: #e5e7eb;
+
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #9ca3af;
+
+  --color-online: #22c55e;
+}
+
 body {
   margin: 0;
   background-color: var(--color-dark-950);
   color: var(--color-text-primary);
+  transition: background-color 0.2s, color 0.2s;
 }
 
-/* Ensure the app fills the full viewport height */
 #root {
   height: 100vh;
 }
