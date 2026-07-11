@@ -28,8 +28,8 @@ app.get('/', (req, res) => {
   res.json({ message: 'QuickChat server is running' })
 })
 
-oUser: Map<socketId, username>
 
+// In-memory storage for online users
 const onlineUsers = new Map()
 const socketToUser = new Map()
 
@@ -45,7 +45,7 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch((err) => {
     console.error('MongoDB connection error:', err.message)
-    process.exit(1)
+    console.warn('⚠ Server will continue without database — messages won\'t be saved')
   })
 
 
@@ -81,6 +81,10 @@ io.on('connection', (socket) => {
     const senderUsername = socketToUser.get(socket.id)
     if (!senderUsername) return
 
+    // Basic validation
+    if (!data.to || typeof data.to !== 'string') return
+    if (!data.text || typeof data.text !== 'string' || !data.text.trim()) return
+
     const recipientSocketId = onlineUsers.get(data.to)
 
     const message = {
@@ -90,12 +94,6 @@ io.on('connection', (socket) => {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
 
-  
-    try {
-      await Message.create(message)
-    } catch (err) {
-      console.error('Failed to save message:', err.message)
-    }
 
     // Send to recipient (if online)
     if (recipientSocketId) {
@@ -104,6 +102,15 @@ io.on('connection', (socket) => {
 
     // Send back to sender
     socket.emit('message:receive', message)
+
+    // Save to MongoDB (don't block on this)
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await Message.create(message)
+      } catch (err) {
+        console.error('Failed to save message:', err.message)
+      }
+    }
   })
 
   /*
@@ -118,6 +125,9 @@ io.on('connection', (socket) => {
     const senderUsername = socketToUser.get(socket.id)
     if (!senderUsername) return
 
+    // Basic validation
+    if (!data.text || typeof data.text !== 'string' || !data.text.trim()) return
+
     const message = {
       from: senderUsername,
       to: '__global__',
@@ -125,15 +135,17 @@ io.on('connection', (socket) => {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
 
-    // Save to MongoDB
-    try {
-      await Message.create(message)
-    } catch (err) {
-      console.error('Failed to save global message:', err.message)
-    }
-
     // Broadcast to ALL connected users (including sender)
     io.emit('message:globalReceive', message)
+
+    // Save to MongoDB (don't block on this)
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await Message.create(message)
+      } catch (err) {
+        console.error('Failed to save global message:', err.message)
+      }
+    }
   })
 
   /*
@@ -147,6 +159,12 @@ io.on('connection', (socket) => {
   socket.on('message:history', async (data, callback) => {
     const myUsername = socketToUser.get(socket.id)
     if (!myUsername) {
+      callback([])
+      return
+    }
+
+    // If MongoDB isn't connected, return empty (don't hang)
+    if (mongoose.connection.readyState !== 1) {
       callback([])
       return
     }
@@ -183,6 +201,12 @@ io.on('connection', (socket) => {
     Returns the last 50 global messages (where to === "__global__").
   */
   socket.on('message:globalHistory', async (callback) => {
+    // If MongoDB isn't connected, return empty (don't hang)
+    if (mongoose.connection.readyState !== 1) {
+      callback([])
+      return
+    }
+
     try {
       const messages = await Message.find({ to: '__global__' })
         .sort({ createdAt: 1 })

@@ -23,18 +23,15 @@ function UsernameScreen({ onJoin }) {
 
     setIsLoading(true)
 
-    if (!socket.connected) {
-      socket.connect()
-    }
-
-    // Use .once() so this listener auto-removes after firing once
-    // .on() would leak and never get cleaned up
-    socket.once('connect', () => {
-      joinWithUsername(trimmed)
-    })
-
     if (socket.connected) {
+      // Already connected — just join directly
       joinWithUsername(trimmed)
+    } else {
+      // Not connected yet — connect first, then join once connected
+      socket.connect()
+      socket.once('connect', () => {
+        joinWithUsername(trimmed)
+      })
     }
   }
 

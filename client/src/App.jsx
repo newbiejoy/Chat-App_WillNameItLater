@@ -78,10 +78,6 @@ function App() {
   useEffect(() => {
     if (!username) return
 
-    if (!socket.connected) {
-      socket.connect()
-    }
-
     function handleConnect() {
       socket.emit('user:join', username, (response) => {
         if (!response.success) {
@@ -131,13 +127,16 @@ function App() {
       }
     }
 
-    socket.on('connect', handleConnect)
     socket.on('users:online', handleOnlineUsers)
     socket.on('message:receive', handleMessage)
     socket.on('message:globalReceive', handleGlobalMessage)
 
-    if (socket.connected) {
-      handleConnect()
+    // handleConnect re-joins on reconnection or on page refresh
+    socket.on('connect', handleConnect)
+
+    // If socket isn't connected yet (e.g., page refresh with saved username), connect it
+    if (!socket.connected) {
+      socket.connect()
     }
 
     return () => {
@@ -179,7 +178,7 @@ function App() {
         setLoadingHistory(false)
       })
     }
-  }, [selectedUser])
+  }, [selectedUser, username])
 
   // ===== Clear Unread When Selecting a User =====
 
