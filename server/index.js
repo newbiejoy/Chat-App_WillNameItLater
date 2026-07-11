@@ -9,23 +9,96 @@ const { createServer } = require('http')
 const { Server } = require('socket.io')
 const cors = require('cors')
 const mongoose = require('mongoose')
+const path = require('path')
+const multer = require('multer')
 const Message = require('./models/Message')
 
 const app = express()
-const PORT = 5000
+const PORT = process.env.PORT || 5000
 
 const httpServer = createServer(app)
 
+// Allow connections from the client (localhost in dev, deployed URL in production)
 const io = new Server(httpServer, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
     methods: ['GET', 'POST']
   }
 })
 
-app.use(cors())
+app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }))
+
+
+/*
+  Serve uploaded files statically.
+  A file saved at server/uploads/abc123.png will be accessible at:
+  http://localhost:5000/uploads/abc123.png
+*/
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+
 app.get('/', (req, res) => {
   res.json({ message: 'QuickChat server is running' })
+})
+
+/*
+  Multer configuration for file uploads.
+  
+  - storage: saves files to server/uploads/ with a unique name
+  - limits: max 5MB per file (keeps things simple and prevents abuse)
+  - fileFilter: only allow images (jpg, png, gif, webp) and PDFs
+*/
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, 'uploads'))
+  },
+  filename: (req, file, cb) => {
+    // Create a unique filename: timestamp-randomNumber.extension
+    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1e9)
+    const ext = path.extname(file.originalname)
+    cb(null, uniqueName + ext)
+  }
+})
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only images (JPG, PNG, GIF, WebP) and PDFs are allowed.'))
+    }
+  }
+})
+
+/*
+  POST /upload — Upload a file.
+  
+  The client sends a multipart form with a single file field named "file".
+  On success, returns the file URL and metadata.
+*/
+app.post('/upload', (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      // Multer error (file too large, wrong type, etc.)
+      return res.status(400).json({ error: err.message })
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded.' })
+    }
+
+    // Build the public URL for the uploaded file
+    const baseUrl = process.env.SERVER_URL || `http://localhost:${PORT}`
+    const fileUrl = `${baseUrl}/uploads/${req.file.filename}`
+
+
+    res.json({
+      url: fileUrl,
+      name: req.file.originalname,
+      type: req.file.mimetype
+    })
+  })
 })
 
 
@@ -83,15 +156,28 @@ io.on('connection', (socket) => {
 
     // Basic validation
     if (!data.to || typeof data.to !== 'string') return
-    if (!data.text || typeof data.text !== 'string' || !data.text.trim()) return
+
+    // A message must have either text or a file (or both)
+    const hasText = data.text && typeof data.text === 'string' && data.text.trim()
+    const hasFile = data.file && data.file.url
+    if (!hasText && !hasFile) return
 
     const recipientSocketId = onlineUsers.get(data.to)
 
     const message = {
       from: senderUsername,
       to: data.to,
-      text: data.text,
+      text: data.text || '',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+
+    // Attach file metadata if present
+    if (hasFile) {
+      message.file = {
+        url: data.file.url,
+        name: data.file.name,
+        type: data.file.type
+      }
     }
 
 
@@ -125,14 +211,25 @@ io.on('connection', (socket) => {
     const senderUsername = socketToUser.get(socket.id)
     if (!senderUsername) return
 
-    // Basic validation
-    if (!data.text || typeof data.text !== 'string' || !data.text.trim()) return
+    // A message must have either text or a file (or both)
+    const hasText = data.text && typeof data.text === 'string' && data.text.trim()
+    const hasFile = data.file && data.file.url
+    if (!hasText && !hasFile) return
 
     const message = {
       from: senderUsername,
       to: '__global__',
-      text: data.text,
+      text: data.text || '',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+
+    // Attach file metadata if present
+    if (hasFile) {
+      message.file = {
+        url: data.file.url,
+        name: data.file.name,
+        type: data.file.type
+      }
     }
 
     // Broadcast to ALL connected users (including sender)
@@ -185,7 +282,8 @@ io.on('connection', (socket) => {
         from: msg.from,
         to: msg.to,
         text: msg.text,
-        time: msg.time
+        time: msg.time,
+        ...(msg.file && { file: msg.file })
       }))
 
       callback(cleaned)
@@ -217,7 +315,8 @@ io.on('connection', (socket) => {
         from: msg.from,
         to: msg.to,
         text: msg.text,
-        time: msg.time
+        time: msg.time,
+        ...(msg.file && { file: msg.file })
       }))
 
       callback(cleaned)

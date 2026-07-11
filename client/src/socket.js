@@ -1,21 +1,15 @@
 /*
   Socket.IO client instance.
   
-  We create ONE socket connection and export it.
-  Every component that needs to talk to the server imports this same socket.
-  
-  Why a separate file?
-  - So we don't accidentally create multiple connections
-  - Any component can import { socket } from '../socket' and use it
-  
-  autoConnect: false
-  - We don't connect immediately when the app loads
-  - Instead, we connect manually after the user enters a username
-  - This prevents anonymous socket connections
+  Uses VITE_SERVER_URL env variable for the server address.
+  - In development: http://localhost:5000 (set in .env)
+  - In production: your deployed server URL (set in Vercel dashboard)
 */
 
 import { io } from 'socket.io-client'
 
-export const socket = io('http://localhost:5000', {
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000'
+
+export const socket = io(SERVER_URL, {
   autoConnect: false
 })

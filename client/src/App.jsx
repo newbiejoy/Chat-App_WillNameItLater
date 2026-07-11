@@ -214,16 +214,27 @@ function App() {
 
   /**
    * Send a message — either private or global depending on selectedUser.
+   * text: the message text (can be empty if sending a file only)
+   * file: optional file object { url, name, type } from the upload
    */
-  const handleSendMessage = useCallback((text) => {
-    if (!selectedUser || !text.trim()) return
+  const handleSendMessage = useCallback((text, file) => {
+    if (!selectedUser) return
+
+    // Must have either text or a file
+    const hasText = text && text.trim()
+    if (!hasText && !file) return
+
+    const payload = { text: hasText ? text.trim() : '' }
+    if (file) {
+      payload.file = file
+    }
 
     if (selectedUser === GLOBAL_KEY) {
-      socket.emit('message:global', { text: text.trim() })
+      socket.emit('message:global', payload)
     } else {
       socket.emit('message:private', {
         to: selectedUser,
-        text: text.trim()
+        ...payload
       })
     }
   }, [selectedUser])

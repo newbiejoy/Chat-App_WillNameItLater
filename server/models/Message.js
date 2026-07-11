@@ -13,11 +13,23 @@ const messageSchema = new mongoose.Schema({
   },
   text: {
     type: String,
-    required: true
+    default: ''
   },
   time: {
     type: String,
     required: true
+  },
+  /*
+    Optional file attachment.
+    Only present when the message includes an uploaded file.
+    - url: public URL to access the file (e.g., http://localhost:5000/uploads/abc.png)
+    - name: original filename (e.g., "photo.jpg")
+    - type: MIME type (e.g., "image/jpeg", "application/pdf")
+  */
+  file: {
+    url: String,
+    name: String,
+    type: String
   },
   createdAt: {
     type: Date,
