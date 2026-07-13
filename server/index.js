@@ -21,6 +21,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 const app = express()
 const PORT = process.env.PORT || 5000
+const CLIENT_URL = (process.env.CLIENT_URL || 'http://localhost:5173').trim()
 
 const httpServer = createServer(app)
 
@@ -117,7 +118,7 @@ app.post('/upload', (req, res) => {
     }
 
     // Build the public URL for the uploaded file
-    const baseUrl = process.env.SERVER_URL || `http://localhost:${PORT}`
+    const baseUrl = (process.env.SERVER_URL || `http://localhost:${PORT}`).trim()
     const fileUrl = `${baseUrl}/uploads/${req.file.filename}`
 
 
