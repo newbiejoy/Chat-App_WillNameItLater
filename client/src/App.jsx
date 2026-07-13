@@ -1,21 +1,4 @@
-/*
-  App is the root component of the entire application.
 
-  It manages all the "global" state:
-  - username: Who is logged in (null = show the username screen)
-  - onlineUsers: Array of currently online usernames from the server
-  - selectedUser: Which user's chat is currently open ("__global__" for global chat)
-  - messages: Object mapping each conversation partner to their messages
-  - unreadFrom: Set of usernames (+ "__global__") who have unread messages
-  - historyLoaded: Set of conversation keys whose history has been fetched from the DB
-
-  State flow:
-  1. Check localStorage for a saved username
-  2. If no username → show UsernameScreen
-  3. If username exists → connect to Socket.IO, show Sidebar + ChatWindow
-  4. Listen for socket events: users:online, message:receive, message:globalReceive
-  5. When selecting a user, load chat history from the database (once)
-*/
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { socket } from './socket'
