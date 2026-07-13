@@ -1,10 +1,4 @@
-/*
-  Socket.IO client instance.
-  
-  Uses VITE_SERVER_URL env variable for the server address.
-  - In development: http://localhost:5000 (set in .env)
-  - In production: your deployed server URL (set in Vercel dashboard)
-*/
+
 
 import { io } from 'socket.io-client'
 
