@@ -1,4 +1,3 @@
-
 const dns = require('dns')
 dns.setServers(['8.8.8.8', '8.8.4.4'])
 
@@ -25,15 +24,37 @@ const PORT = process.env.PORT || 5000
 
 const httpServer = createServer(app)
 
-// Allow connections from the client (localhost in dev, deployed URL in production)
+// ---- CORS: allow multiple origins (local dev, production, Vercel previews) ----
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://chat-app-will-name-it-later.vercel.app',
+  'https://chat-app-will-name-it-later-git-main-newbiejoys-projects.vercel.app'
+]
+
+function corsOriginCheck(origin, callback) {
+  // Allow requests with no origin (e.g. curl, server-to-server, Postman)
+  if (!origin) return callback(null, true)
+
+  const isAllowedList = allowedOrigins.includes(origin)
+  // Also allow any Vercel preview deployment for this project
+  const isVercelPreview = /^https:\/\/chat-app-will-name-it-later.*\.vercel\.app$/.test(origin)
+
+  if (isAllowedList || isVercelPreview) {
+    callback(null, true)
+  } else {
+    callback(new Error(`Not allowed by CORS: ${origin}`))
+  }
+}
+
+// Allow connections from the client (localhost in dev, deployed URL(s) in production)
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: corsOriginCheck,
     methods: ['GET', 'POST']
   }
 })
 
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }))
+app.use(cors({ origin: corsOriginCheck }))
 
 
 /*
