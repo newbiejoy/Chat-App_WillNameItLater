@@ -10,8 +10,15 @@ const { Server } = require('socket.io')
 const cors = require('cors')
 const mongoose = require('mongoose')
 const path = require('path')
+const fs = require('fs')
 const multer = require('multer')
 const Message = require('./models/Message')
+
+// Create uploads directory if it doesn't exist (needed for Render deploys)
+const uploadsDir = path.join(__dirname, 'uploads')
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir)
+}
 
 const app = express()
 const PORT = process.env.PORT || 5000
