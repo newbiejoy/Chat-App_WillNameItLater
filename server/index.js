@@ -174,8 +174,9 @@ io.on('connection', (socket) => {
     socket.join('global')
 
     console.log(`User joined: ${trimmed} (${socket.id})`)
-    io.emit('users:online', getOnlineUsersList())
-    callback({ success: true })
+    const usersList = getOnlineUsersList()
+    io.emit('users:online', usersList)
+    callback({ success: true, users: usersList })
   })
 
   

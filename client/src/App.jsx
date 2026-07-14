@@ -66,6 +66,11 @@ function App() {
         if (!response.success) {
           console.warn('Username taken on reconnect:', response.error)
           handleLogout()
+        } else if (response.users) {
+          // Immediately update online users from the callback response
+          // This avoids relying solely on the broadcast event which can be
+          // delayed by Socket.IO transport timing (e.g. during polling phase)
+          setOnlineUsers(response.users)
         }
       })
     }
@@ -117,9 +122,13 @@ function App() {
     // handleConnect re-joins on reconnection or on page refresh
     socket.on('connect', handleConnect)
 
-    // If socket isn't connected yet (e.g., page refresh with saved username), connect it
+    // If socket isn't connected yet, connect it.
+    // If already connected (e.g., React re-mount), call handleConnect directly
+    // since the 'connect' event won't fire again for an already-connected socket.
     if (!socket.connected) {
       socket.connect()
+    } else {
+      handleConnect()
     }
 
     return () => {
