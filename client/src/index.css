@@ -1,24 +1,14 @@
-/* Import Tailwind CSS v4 */
 @import "tailwindcss";
 
-/*
-  Custom theme for our chat app.
-  We use CSS custom properties so we can switch between
-  AMOLED dark and Light themes at runtime.
-*/
+
 @theme {
-  /* Font family */
   --font-sans: "Inter", sans-serif;
 
-  /*
-    These are the DEFAULT (AMOLED dark) theme colors.
-    Pure blacks for true AMOLED screens.
-  */
   --color-dark-950: #000000;   /* Pure black background */
   --color-dark-900: #0a0a0a;   /* Sidebar background */
   --color-dark-800: #141414;   /* Input fields, hover states */
   --color-dark-700: #1f1f1f;   /* Borders, dividers */
-  --color-dark-600: #3e5368;   /* Subtle text, icons */
+  --color-dark-600: #3e5368;   
 
   /* Accent colors */
   --color-accent-500: #2b5278;
@@ -38,11 +28,6 @@
   --color-online: #4dd964;
 }
 
-/*
-  Light theme overrides.
-  When the <html> tag has data-theme="light", these CSS variables
-  override the dark defaults above.
-*/
 [data-theme="light"] {
   --color-dark-950: #f0f2f5;   /* Light gray background */
   --color-dark-900: #ffffff;   /* White sidebar */
