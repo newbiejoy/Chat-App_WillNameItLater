@@ -6,11 +6,9 @@ import UsernameScreen from './components/UsernameScreen'
 import Sidebar from './components/Sidebar'
 import ChatWindow from './components/ChatWindow'
 
-// Special key for the global chat conversation
 const GLOBAL_KEY = '__global__'
 
 function App() {
-  // ===== State =====
 
   const [username, setUsername] = useState(() => {
     return localStorage.getItem('quickchat-username') || null
@@ -22,25 +20,18 @@ function App() {
     return localStorage.getItem('quickchat-selected') || null
   })
 
-  // Messages organized by conversation partner (or "__global__" for global chat)
   const [messages, setMessages] = useState({})
 
-  // Track which users have sent us unread messages
   const [unreadFrom, setUnreadFrom] = useState(new Set())
 
-  // Track which conversations have had their history loaded from the database
-  // So we don't re-fetch every time you click back and forth
   const [historyLoaded, setHistoryLoaded] = useState(new Set())
 
-  // Whether chat history is currently being loaded (for showing a spinner)
   const [loadingHistory, setLoadingHistory] = useState(false)
 
-  // Theme state: 'dark' (AMOLED) or 'light'
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('quickchat-theme') || 'dark'
   })
 
-  // Apply theme to the <html> tag whenever it changes
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('quickchat-theme', theme)
@@ -50,13 +41,11 @@ function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
   }
 
-  // Ref to track selectedUser inside event handlers (avoids stale closures)
   const selectedUserRef = useRef(selectedUser)
   useEffect(() => {
     selectedUserRef.current = selectedUser
   }, [selectedUser])
 
-  // ===== Socket.IO Connection & Event Listeners =====
 
   useEffect(() => {
     if (!username) return
@@ -67,9 +56,7 @@ function App() {
           console.warn('Username taken on reconnect:', response.error)
           handleLogout()
         } else if (response.users) {
-          // Immediately update online users from the callback response
-          // This avoids relying solely on the broadcast event which can be
-          // delayed by Socket.IO transport timing (e.g. during polling phase)
+   
           setOnlineUsers(response.users)
         }
       })
@@ -98,14 +85,12 @@ function App() {
       }
     }
 
-    // Global message received
     function handleGlobalMessage(message) {
       setMessages((prev) => ({
         ...prev,
         [GLOBAL_KEY]: [...(prev[GLOBAL_KEY] || []), message]
       }))
 
-      // Mark global as unread if we're not currently viewing it
       if (message.from !== username && selectedUserRef.current !== GLOBAL_KEY) {
         setUnreadFrom((prev) => {
           const newSet = new Set(prev)
@@ -119,12 +104,8 @@ function App() {
     socket.on('message:receive', handleMessage)
     socket.on('message:globalReceive', handleGlobalMessage)
 
-    // handleConnect re-joins on reconnection or on page refresh
     socket.on('connect', handleConnect)
 
-    // If socket isn't connected yet, connect it.
-    // If already connected (e.g., React re-mount), call handleConnect directly
-    // since the 'connect' event won't fire again for an already-connected socket.
     if (!socket.connected) {
       socket.connect()
     } else {
@@ -139,18 +120,15 @@ function App() {
     }
   }, [username])
 
-  // ===== Load Chat History When Selecting a User =====
 
   useEffect(() => {
     if (!selectedUser || !socket.connected) return
 
-    // Don't reload if we already fetched this conversation's history
     if (historyLoaded.has(selectedUser)) return
 
     setLoadingHistory(true)
 
     if (selectedUser === GLOBAL_KEY) {
-      // Load global chat history — replace (not merge) to avoid duplicates
       socket.emit('message:globalHistory', (history) => {
         setMessages((prev) => ({
           ...prev,
@@ -160,7 +138,6 @@ function App() {
         setLoadingHistory(false)
       })
     } else {
-      // Load private chat history — replace (not merge) to avoid duplicates
       socket.emit('message:history', { with: selectedUser }, (history) => {
         setMessages((prev) => ({
           ...prev,
@@ -172,7 +149,6 @@ function App() {
     }
   }, [selectedUser, username])
 
-  // ===== Clear Unread When Selecting a User =====
 
   useEffect(() => {
     if (selectedUser) {
